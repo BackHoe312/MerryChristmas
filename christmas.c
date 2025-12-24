@@ -25,22 +25,35 @@ const char *ascii_art[] = {
 	"                           |___/                                                           "
 };
 
-void print_colored_ascii_art()
-{
-	srand(time(NULL));
+#define DIGIT_H 5
+const char *DIGITS[10][DIGIT_H] = {
+	{"███", "█ █", "█ █", "█ █", "███"}, // 0
+	{" ██", "  █", "  █", "  █", " ███"}, // 1
+	{"███", "  █", "███", "█  ", "███"}, // 2
+	{"███", "  █", "███", "  █", "███"}, // 3
+	{"█ █", "█ █", "███", "  █", "  █"}, // 4
+	{"███", "█  ", "███", "  █", "███"}, // 5
+	{"███", "█  ", "███", "█ █", "███"}, // 6
+	{"███", "  █", "  █", "  █", "  █"}, // 7
+	{"███", "█ █", "███", "█ █", "███"}, // 8
+	{"███", "█ █", "███", "  █", "███"}  // 9
+};
 
-	int random = 0;
+const char *COLON_ON[DIGIT_H] = {
+	"   ",
+	" █ ",
+	"   ",
+	" █ ",
+	"   "
+};
 
-	for (int i = 0; i < 8; i++) {
-		const char* line = ascii_art[i];
-		for (int j = 0; line[j] != '\0'; j++) {
-			random = rand() % 7;
-			printf("%s%c", colors[random], line[j]);
-		}
-		printf("\n");
-	}
-	printf("\033[0m"); // 색상 초기화
-}
+const char *COLON_OFF[DIGIT_H] = {
+	"   ",
+	"   ",
+	"   ",
+	"   ",
+	"   "
+};
 
 #define REPEAT_SIZE 10
 #define RED "\033[31m"
@@ -72,16 +85,91 @@ void print_christmas_tree(int line)
 	printf("\033[38;5;94m***\n");
 }
 
+void print_colored_ascii_art()
+{
+	srand(time(NULL));
+
+	int random = 0;
+
+	for (int i = 0; i < 8; i++) {
+		const char* line = ascii_art[i];
+		for (int j = 0; line[j] != '\0'; j++) {
+			random = rand() % 7;
+			printf("%s%c", colors[random], line[j]);
+		}
+		printf("\n");
+	}
+	printf(RESET);
+}
+
+#define LABEL_COLOR "\033[37m"
+void print_digital_countdown()
+{
+	time_t now = time(NULL);
+	struct tm *t = localtime(&now);
+
+	struct tm xmas = *t;
+	xmas.tm_mon = 11;
+	xmas.tm_mday = 25;
+	xmas.tm_hour = 0;
+	xmas.tm_min = 0;
+	xmas.tm_sec = 0;
+
+	time_t xt = mktime(&xmas);
+	if (difftime(xt, now) < 0) {
+		xmas.tm_year++;
+		xt = mktime(&xmas);
+	}
+
+	int diff = (int)difftime(xt, now);
+
+	int d = diff / 86400;
+	int h = (diff % 86400) / 3600;
+	int m = (diff % 3600) / 60;
+	int s = diff % 60;
+
+	int nums[8] = {
+		d / 10, d % 10,
+		h / 10, h % 10,
+		m / 10, m % 10,
+		s / 10, s % 10
+	};
+
+	int blink = (s % 2 == 0);
+	const char **colon = blink ? COLON_ON : COLON_OFF;
+
+	printf(RED);
+	for (int row = 0; row < DIGIT_H; row++) {
+		for (int i = 0; i < 8; i++) {
+			printf("%s  ", DIGITS[nums[i]][row]);
+			if (i == 1 || i == 3 || i == 5)
+				printf("%s  ", colon[row]);
+		}
+		printf("\n");
+	}
+	printf(RESET);
+
+	printf("%s   DD             HH             MM             SS%s\n", LABEL_COLOR, RESET);
+
+}
+
 int main()
 {
 	int line = 0;
 
 	while (1) {
-		system("clear");
+//		system("clear");
+		printf("\033[H");
+
+		printf("\n\n\n");
 		print_christmas_tree(line);
 		printf("\n\n");
 		print_colored_ascii_art();
-		usleep(700000);
+		printf("\n\n");
+		print_digital_countdown();
+
+		fflush(stdout);
+		usleep(1000000);
 		line++;
 	}
 
